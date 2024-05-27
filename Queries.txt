@@ -1,0 +1,241 @@
+Question:
+1. Find all the topics and tasks which are thought in the month of October
+Query:
+    db.topics.aggregate([
+  {
+$match:{
+date:{
+$gt:ISODate("2020-10-01T00:00:00.000Z"),
+$lt:ISODate("2020-11-01T00:00:00.000Z")
+}
+}
+},
+  {
+$project:{
+_id:0,
+topic:1,
+task_title:1,
+date:1
+}
+}
+]).toArray();
+
+Output:
+[
+  {
+    topic: 'Topic 3',
+    date: 2020-10-16T00:00:00.000Z,
+    task_title: 'Task 3'
+  },
+  {
+    topic: 'Topic 4',
+    date: 2020-10-17T00:00:00.000Z,
+    task_title: 'Task 4'
+  },
+  {
+    topic: 'Topic 5',
+    date: 2020-10-30T00:00:00.000Z,
+    task_title: 'Task 5'
+  }
+]
+
+2. Find all the company drives which appeared between 15 oct-2020 and 31-oct-2020
+Query:
+   db.company_drives.aggregate([
+  {
+$match:{
+date:{
+$gte:ISODate("2020-10-15T00:00:00.000Z"),
+$lt:ISODate("2020-11-01T00:00:00.000Z")
+}
+}
+},  
+  {
+$project:{
+company:1,
+date:1,
+_id:0
+}
+}
+]).toArray();
+
+
+Output:
+[
+  { company: 'Company 1', date: 2020-10-16T00:00:00.000Z },
+  { company: 'Company 2', date: 2020-10-23T00:00:00.000Z },
+  { company: 'Company 3', date: 2020-10-27T00:00:00.000Z }
+]
+
+3. Find all the company drives and students who are appeared for the placement.
+Query:
+    db.company_drives.aggregate([
+  {
+$lookup:{
+from:'users',
+localField:"user_id",
+foreignField:"id",
+as:'details'
+}
+},
+  {
+$unwind:'$details'
+},
+  {
+$project:{
+company:1,
+interviewee:"$details.userName",
+_id:0
+}
+}
+]).toArray();
+
+Output:
+[
+  { company: 'Company 1', interviewee: 'User 1' },
+  { company: 'Company 2', interviewee: 'User 2' },
+  { company: 'Company 3', interviewee: 'User 3' },
+  { company: 'Company 4', interviewee: 'User 4' },
+  { company: 'Company 5', interviewee: 'User 5' }
+]
+
+4. Find the number of problems solved by the user in codekata
+Query:
+    db.codekata.aggregate([
+  {
+    $group: {
+      _id: '$user_id',
+      solved: { $sum: 1 }
+    }
+  },
+  {
+    $lookup: {
+      from: 'users',
+      localField: '_id',
+      foreignField: 'id',
+      as: 'userDetails'
+    }
+  },
+  {
+    $unwind: '$userDetails'
+  },
+  {
+    $project: {
+      _id: 0,
+      user_id: '$_id',
+      userName: '$userDetails.userName',
+      solved: 1
+    }
+  },
+  {
+    $sort: { solved: -1 }
+  }
+]).toArray();
+
+
+Output:
+[
+  { solved: 4, user_id: 1, userName: 'User 1' },
+  { solved: 3, user_id: 2, userName: 'User 2' },
+  { solved: 2, user_id: 3, userName: 'User 3' },
+  { solved: 1, user_id: 8, userName: 'User 8' },
+  { solved: 1, user_id: 5, userName: 'User 5' },
+  { solved: 1, user_id: 28, userName: 'User 28' },
+  { solved: 1, user_id: 14, userName: 'User 14' },
+  { solved: 1, user_id: 18, userName: 'User 18' },
+  { solved: 1, user_id: 4, userName: 'User 4' },
+  { solved: 1, user_id: 13, userName: 'User 13' },
+  { solved: 1, user_id: 15, userName: 'User 15' },
+  { solved: 1, user_id: 17, userName: 'User 17' },
+  { solved: 1, user_id: 10, userName: 'User 10' },
+  { solved: 1, user_id: 19, userName: 'User 19' },
+  { solved: 1, user_id: 11, userName: 'User 11' },
+  { solved: 1, user_id: 9, userName: 'User 9' },
+  { solved: 1, user_id: 21, userName: 'User 21' },
+  { solved: 1, user_id: 16, userName: 'User 16' },
+  { solved: 1, user_id: 6, userName: 'User 6' },
+  { solved: 1, user_id: 20, userName: 'User 20' },
+  { solved: 1, user_id: 22, userName: 'User 22' },
+  { solved: 1, user_id: 7, userName: 'User 7' },
+  { solved: 1, user_id: 23, userName: 'User 23' },
+  { solved: 1, user_id: 24, userName: 'User 24' },
+  { solved: 1, user_id: 25, userName: 'User 25' },
+  { solved: 1, user_id: 26, userName: 'User 26' },
+  { solved: 1, user_id: 27, userName: 'User 27' },
+  { solved: 1, user_id: 12, userName: 'User 12' }
+]
+
+5. Find all the mentors with who has the mentee's count more than 15
+Query:
+    db.users.aggregate([
+  {
+$group:{
+_id:'$mentor_id',
+mentees:{$sum:1}
+}
+},
+  {
+$lookup:{
+from:"mentors",
+localField:"_id",
+foreignField:"id",
+as:'mentorDetails'
+}
+},
+  {
+$unwind:'$mentorDetails'
+},
+  {
+$project:{
+_id:0,
+mentorId:'$_id',
+mentorName:"$mentorDetails.name",
+mentees:1
+}
+},
+  {
+$match:{
+mentees:{$gt:15}
+}
+}
+]);
+
+Output:
+{
+  mentees: 18,
+  mentorId: 1,
+  mentorName: 'Mentor 1'
+}
+
+6. Find the number of users who are absent and task is not submitted  between 15 oct-2020 and 31-oct-2020
+Query:
+    db.attendance.aggregate([
+  {
+$match:{date:{$gte:ISODate("2020-10-15T00:00:00.000Z"),$lte:ISODate("2020-10-31")},status:false}
+},
+
+  {
+$lookup:{
+from:"tasks",
+localField:"user_id",
+foreignField:"user_id",
+as:"tasksNotSubmitted",
+pipeline:[
+  {
+$match:{date:{$gte:ISODate("2020-10-15T00:00:00.000Z"),$lte:ISODate("2020-10-31T00:00:00.000Z")},submitted:false}
+}
+]
+}
+},
+{
+$group:{_id:"$user_id"}
+},
+  {
+$count:"usersNotSubmitted"
+}
+]);
+
+Output:
+{
+  usersNotSubmitted: 26
+}
